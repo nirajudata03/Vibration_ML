@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vibration ML
 
 Local vibration monitoring dashboard using a React frontend, Flask API, sensor logger, and saved Random Forest model.
@@ -25,3 +26,6 @@ Recordings, uploaded data, generated results, the trained model, logs, and Node 
 6. Use the **N** menu and choose **Stop all servers** when finished.
 
 Connect the ESP32 and close Arduino Serial Monitor or other programs using its COM port before starting the logger. If needed, edit `SERIAL_PORT` in `backend/data_logger.py`. The old `bin/data_logger.py` path remains as a small launcher for this copy.
+=======
+# Vibration_ML
+>>>>>>> 88db6dc71ebebcda0ffff54e0e5705281c0afa70
