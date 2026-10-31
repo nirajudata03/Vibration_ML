@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.log
+
+# React / Node
+frontend/node_modules/
+frontend/.npm-cache/
+frontend/dist/
+
+# Sensor readings, uploaded CSVs, and generated predictions
+data/readings/*.csv
+data/uploads/*.csv
+data/predictions/*.csv
+Predicted_result/*.csv
+csv files/*.csv
+csv files/*.py
+
+# Trained model and generated evaluation artifacts
+results/*
+!results/.gitkeep
+!results/README.md
+
+# Machine-specific editor files and old web copy
+.vscode/
+web/

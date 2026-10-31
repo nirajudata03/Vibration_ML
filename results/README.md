@@ -1,0 +1,1 @@
+This folder stores the local trained model and generated evaluation reports. These files are excluded from Git. Place `vibration_random_forest.pkl` here for dashboard predictions, or run `python backend/train_vibration_rf.py` from the project root to generate it from recordings in `csv files/`.
