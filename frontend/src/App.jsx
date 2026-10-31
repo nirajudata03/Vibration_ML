@@ -14,6 +14,8 @@ export default function App() {
   const [activating, setActivating] = useState(false);
   const [loggerStarting, setLoggerStarting] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState('');
   const [files, setFiles] = useState([]);
   const [fileFolder, setFileFolder] = useState('all');
   const [rows, setRows] = useState([]);
@@ -32,15 +34,18 @@ export default function App() {
 
   const refreshFiles = useCallback(async () => {
     try {
-      const response = await fetch(`${API}/files`);
-      if (response.ok) setFiles(await response.json());
-    } catch { /* Files appear when the backend is online. */ }
+      const response = await fetch(`${API}/files`, { cache: 'no-store' });
+      if (!response.ok) return false;
+      setFiles(await response.json());
+      return true;
+    } catch { return false; }
   }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const [healthRes, dataRes, sessionRes] = await Promise.all([fetch(`${API}/health`), fetch(`${API}/logger/data`), fetch(`${API}/logger/session/status`)]);
+      const [healthRes, dataRes, sessionRes] = await Promise.all([fetch(`${API}/health`, { cache: 'no-store' }), fetch(`${API}/logger/data`, { cache: 'no-store' }), fetch(`${API}/logger/session/status`, { cache: 'no-store' })]);
       setBackendStatus(healthRes.ok ? 'online' : 'offline');
+      if (!healthRes.ok) throw new Error('Backend is offline');
       if (dataRes.ok) { setLive(await dataRes.json()); setLoggerStarting(false); }
       if (sessionRes.ok) {
         const nextSession = await sessionRes.json();
@@ -51,7 +56,8 @@ export default function App() {
         wasRecording.current = nextSession.recording;
         setSession(nextSession);
       }
-    } catch { setBackendStatus('offline'); }
+      return true;
+    } catch { setBackendStatus('offline'); return false; }
   }, [refreshFiles]);
 
   useEffect(() => {
@@ -135,6 +141,15 @@ export default function App() {
     finally { setActivating(false); }
   }
 
+  async function handleRefreshClick() {
+    setRefreshing(true);
+    setRefreshNote('');
+    const [apiOk, fileListOk] = await Promise.all([refresh(), refreshFiles()]);
+    setRefreshNote(apiOk && fileListOk ? 'Updated' : 'Backend or file list unavailable');
+    setRefreshing(false);
+    window.setTimeout(() => setRefreshNote(''), 2500);
+  }
+
   async function stopServers() {
     setMenuOpen(false);
     try {
@@ -176,7 +191,7 @@ export default function App() {
     </aside>
 
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">Vibration ML <span>/</span> <b>Overview</b></div><div className="top-actions"><div className={`connection ${connected ? 'online' : ''}`}><span className="pulse-dot" />{connected ? 'Sensor connected' : 'Sensor offline'}</div><button className={`backend-button ${backendStatus}`} onClick={activateBackend} disabled={activating || loggerStarting || backendStatus === 'offline'} title={backendStatus === 'offline' ? 'Start the Python backend first' : 'Start the sensor logger if it is not active'}><Radio size={14} />{backendStatus === 'offline' ? 'Backend offline' : loggerStarting ? 'Starting…' : activating ? 'Activating…' : 'Activate backend'}</button><button className="icon-button" title="Refresh sensor status" onClick={() => { refresh(); refreshFiles(); }}><RefreshCw size={16} /></button><div className="avatar-menu-wrap"><button className="avatar" aria-haspopup="menu" aria-expanded={menuOpen} aria-label="Open account and server menu" onClick={() => setMenuOpen(!menuOpen)}>N<ChevronDown size={11} /></button>{menuOpen && <div className="avatar-menu" role="menu"><div className="menu-heading"><b>VibeGuard</b><span>Local project controls</span></div><button role="menuitem" className="stop-services-item" onClick={stopServers}><Power size={15} /><span><b>Stop all servers</b><small>Stop React, Python API, and logger</small></span></button></div>}</div></div></header>
+      <header className="topbar"><div className="breadcrumb">Vibration ML <span>/</span> <b>Overview</b></div><div className="top-actions"><div className={`connection ${connected ? 'online' : ''}`}><span className="pulse-dot" />{connected ? 'Sensor connected' : 'Sensor offline'}</div><button className={`backend-button ${backendStatus}`} onClick={activateBackend} disabled={activating || loggerStarting || backendStatus === 'offline'} title={backendStatus === 'offline' ? 'Start the Python backend first' : 'Start the sensor logger if it is not active'}><Radio size={14} />{backendStatus === 'offline' ? 'Backend offline' : loggerStarting ? 'Starting…' : activating ? 'Activating…' : 'Activate backend'}</button><button className="icon-button" title="Refresh sensor status" onClick={handleRefreshClick} disabled={refreshing} aria-label="Refresh dashboard data"><RefreshCw size={16} className={refreshing ? "spin" : ""} /></button>{refreshNote && <span className="refresh-note">{refreshNote}</span>}<div className="avatar-menu-wrap"><button className="avatar" aria-haspopup="menu" aria-expanded={menuOpen} aria-label="Open account and server menu" onClick={() => setMenuOpen(!menuOpen)}>N<ChevronDown size={11} /></button>{menuOpen && <div className="avatar-menu" role="menu"><div className="menu-heading"><b>VibeGuard</b><span>Local project controls</span></div><button role="menuitem" className="stop-services-item" onClick={stopServers}><Power size={15} /><span><b>Stop all servers</b><small>Stop React, Python API, and logger</small></span></button></div>}</div></div></header>
       <div className="page-content" id="overview">
         <section className="welcome-row"><div><div className="eyebrow">MOTOR HEALTH MONITORING</div><h1>Dashboard overview</h1><p>Review live vibration readings and inspect fault predictions from your CSV data.</p></div><div className="updated"><span className="pulse-dot" /> Live updates <span className="separator">·</span> every 1.2 sec</div></section>
 
@@ -220,4 +235,5 @@ export default function App() {
     </main>
   </div>;
 }
+
 
